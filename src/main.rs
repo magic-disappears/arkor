@@ -1,7 +1,7 @@
-use std::collections::BTreeMap;
 use crate::bytecode::bytecode::{Bytecode, Opcode};
 use crate::interpreter::vm;
 use crate::interpreter::vm::Interpreter;
+use std::collections::BTreeMap;
 
 mod bytecode;
 mod interpreter;

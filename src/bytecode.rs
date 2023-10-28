@@ -11,8 +11,8 @@ pub mod bytecode {
         // control flow
         Jump,
         JumpCond,
-        Call,  // 1 operand, enters new stack frame
-        Ret,   // 1 operand, leaves the current stack frame, write return addr to local.
+        Call, // 1 operand, enters new stack frame
+        Ret,  // 1 operand, leaves the current stack frame, write return addr to local.
         // math
         Incr,
         Decr,
@@ -37,10 +37,7 @@ pub mod bytecode {
 
     impl Bytecode {
         pub(crate) fn new(opcode: Opcode, operands: Vec<i32>) -> Bytecode {
-            Bytecode {
-                opcode,
-                operands,
-            }
+            Bytecode { opcode, operands }
         }
     }
 }

@@ -1,6 +1,6 @@
 pub mod vm {
-    use std::collections::{BTreeMap, VecDeque};
     use crate::bytecode::bytecode::{Bytecode, Opcode};
+    use std::collections::{BTreeMap, VecDeque};
 
     // TODO: should contain fp, sp, frames stack
     struct VM {}
@@ -24,9 +24,7 @@ pub mod vm {
     }
 
     impl StackFrame {
-        pub(crate) fn new(args: Vec<i32>,
-                          locals: Vec<i32>,
-                          instr: BTreeMap<i32, Bytecode>) -> StackFrame {
+        pub(crate) fn new(args: Vec<i32>, locals: Vec<i32>, instr: BTreeMap<i32, Bytecode>) -> StackFrame {
             StackFrame {
                 args,
                 locals,
