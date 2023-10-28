@@ -20,7 +20,6 @@ pub mod bytecode {
         Sub,
         Mul,
         Div,
-        Mod,
         // comparisons
         Eq,
         Neq,
@@ -28,12 +27,6 @@ pub mod bytecode {
         Gte,
         Lt,
         Lte,
-        // logical
-        BitwiseAnd,
-        BitwiseOr,
-        BitwiseXor,
-        ShiftLeft,
-        ShiftRight,
     }
 
     #[derive(Debug)]
