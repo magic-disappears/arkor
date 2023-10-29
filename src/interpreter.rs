@@ -36,12 +36,17 @@ pub mod vm {
     }
 
     impl StackFrame {
-        pub(crate) fn new(args: Vec<i32>, locals: Vec<i32>, instr: BTreeMap<i32, Bytecode>) -> Result<StackFrame, StackFrameError> {
+        pub(crate) fn new(
+            args: Vec<i32>,
+            locals: Vec<i32>,
+            instr: BTreeMap<i32, Bytecode>,
+        ) -> Result<StackFrame, StackFrameError> {
             (StackFrame {
                 args,
                 locals,
                 instructions: instr,
-            }).verify()
+            })
+            .verify()
         }
 
         fn verify(self) -> Result<StackFrame, StackFrameError> {
@@ -58,9 +63,8 @@ pub mod vm {
             for instr in &self.instructions {
                 let opcode = &instr.1.opcode;
                 let operands = &instr.1.operands;
-                if operands_num.contains_key(opcode)
-                    && operands_num.get(opcode).unwrap() != &operands.len() {
-                    return Err(StackFrameError::IncorrectOperandsNumber(operands.len()))
+                if operands_num.contains_key(opcode) && operands_num.get(opcode).unwrap() != &operands.len() {
+                    return Err(StackFrameError::IncorrectOperandsNumber(operands.len()));
                 }
 
                 match opcode {
@@ -70,30 +74,28 @@ pub mod vm {
                             return Err(StackFrameError::UnreachableLocal(operand));
                         }
                         stack_size += 1;
-                    },
+                    }
                     Opcode::Store => {
                         let operand = operands[0] as usize;
                         if operand >= self.locals.len() {
                             return Err(StackFrameError::UnreachableLocal(operand));
                         }
                         stack_size -= 1;
-                    },
-                    Opcode::Push => {
-                        stack_size += 1
-                    },
+                    }
+                    Opcode::Push => stack_size += 1,
                     Opcode::Pop | Opcode::Ret => {
                         if stack_size < 1 {
                             return Err(StackFrameError::EmptyStack);
                         }
                         stack_size -= 1;
-                    },
+                    }
                     Opcode::Pop2 => {
                         if stack_size < 2 {
                             return Err(StackFrameError::EmptyStack);
                         }
                         stack_size -= 2;
-                    },
-                    _ => return Err(StackFrameError::UnsupportedInstruction)
+                    }
+                    _ => return Err(StackFrameError::UnsupportedInstruction),
                 }
                 println!("Verify {:?}. Stack size: {}", opcode, stack_size)
             }
