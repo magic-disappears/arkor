@@ -1,6 +1,7 @@
 pub mod bytecode {
+
     #[warn(dead_code, unused_variables)]
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
     pub enum Opcode {
         // stack
         Load,  // 1 operand, loads FROM locals TO stack
@@ -12,7 +13,7 @@ pub mod bytecode {
         Jump,
         JumpCond,
         Call, // 1 operand, enters new stack frame
-        Ret,  // 1 operand, leaves the current stack frame, write return addr to local.
+        Ret,  // 0 operand, leaves the current stack frame, write return addr to local.
         // math
         Incr,
         Decr,
