@@ -2,11 +2,18 @@ use crate::bytecode::bytecode::{Bytecode, Opcode};
 use crate::interpreter::vm;
 use crate::interpreter::vm::Interpreter;
 use std::collections::BTreeMap;
+use env_logger::Env;
 
 mod bytecode;
 mod interpreter;
 mod interpreter_test;
 fn main() {
+    let env = Env::default()
+        .filter_or("MY_LOG_LEVEL", "trace")
+        .write_style_or("MY_LOG_STYLE", "always");
+
+    env_logger::init_from_env(env);
+
     let mut instr: BTreeMap<i32, Bytecode> = BTreeMap::new();
     instr.insert(0, Bytecode::new(Opcode::Push, vec![1]));
     instr.insert(1, Bytecode::new(Opcode::Store, vec![0]));

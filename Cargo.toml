@@ -9,3 +9,7 @@ edition = "2021"
 [dependencies]
 static_assertions = "1.1.0"
 thiserror = "1.0"
+log = { version = "0.4.20", features = [] }
+env_logger = "0.10.0"
+
+# Note: to enable desired log level, run compiler/tests with `RUST_LOG=_log_level_`
