@@ -1,7 +1,7 @@
 pub mod vm {
     use crate::bytecode::bytecode::{Bytecode, Opcode};
-    use std::collections::{BTreeMap, VecDeque};
     use log::debug;
+    use std::collections::{BTreeMap, VecDeque};
 
     // TODO: should contain pc, fp, sp, frames stack
     struct VM {}
