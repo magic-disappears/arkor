@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 mod bytecode;
 mod interpreter;
-
+mod interpreter_test;
 fn main() {
     let mut instr: BTreeMap<i32, Bytecode> = BTreeMap::new();
     instr.insert(0, Bytecode::new(Opcode::Push, vec![1]));

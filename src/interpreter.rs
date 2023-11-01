@@ -2,7 +2,7 @@ pub mod vm {
     use crate::bytecode::bytecode::{Bytecode, Opcode};
     use std::collections::{BTreeMap, VecDeque};
 
-    // TODO: should contain fp, sp, frames stack
+    // TODO: should contain pc, fp, sp, frames stack
     struct VM {}
 
     #[derive(Debug)]
@@ -106,8 +106,9 @@ pub mod vm {
     // Stack-based interpreter
     #[derive(Debug)]
     pub(crate) struct Interpreter {
-        pc: i32,
-        // Note: temporarily, we're using i32 for simplicity
+        pub(crate) pc: i32,
+        // TODO: should be private? package-private for test purposes
+        // Note: we're using i32 for simplicity
         stack: VecDeque<i32>,
         frame: StackFrame,
         // frame: VecDeque<&StackFrame>,
@@ -158,7 +159,7 @@ pub mod vm {
                     // Writes return address to PC, return from function, ejects stack frame.
                     Opcode::Ret => {
                         let return_addr = self.stack.pop_back().unwrap();
-                        pc = return_addr;
+                        self.pc = return_addr;
                         println!("Ret. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
                         println!("Frame execution is over, return address is {:?}", return_addr);
                         return;
