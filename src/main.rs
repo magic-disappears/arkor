@@ -13,8 +13,11 @@ fn main() {
     instr.insert(2, Bytecode::new(Opcode::Load, vec![0]));
     instr.insert(3, Bytecode::new(Opcode::Ret, vec![]));
 
-    let frame: vm::StackFrame = vm::StackFrame::new(vec![], vec![0; 4], instr);
-    let mut interpreter: Interpreter = Interpreter::new(frame);
-
-    interpreter.run();
+    match vm::StackFrame::new(vec![], vec![0; 4], instr) {
+        Err(err) => println!("Stack frame is not correct: {}.", err),
+        Ok(frame) => {
+            let mut interpreter: Interpreter = Interpreter::new(frame);
+            interpreter.run();
+        }
+    }
 }

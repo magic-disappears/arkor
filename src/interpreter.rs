@@ -23,13 +23,83 @@ pub mod vm {
         }
     }
 
+    #[derive(Debug, thiserror::Error)]
+    pub enum StackFrameError {
+        #[error("instruction is not supported")] // TODO: pass opcode name
+        UnsupportedInstruction,
+        #[error("instruction has wrong number of operands: {0}")]
+        IncorrectOperandsNumber(usize),
+        #[error("empty stack")] // TODO: pass opcode name
+        EmptyStack,
+        #[error("unreachable local: no {0}th local")]
+        UnreachableLocal(usize),
+    }
+
     impl StackFrame {
-        pub(crate) fn new(args: Vec<i32>, locals: Vec<i32>, instr: BTreeMap<i32, Bytecode>) -> StackFrame {
-            StackFrame {
+        pub(crate) fn new(
+            args: Vec<i32>,
+            locals: Vec<i32>,
+            instr: BTreeMap<i32, Bytecode>,
+        ) -> Result<StackFrame, StackFrameError> {
+            (StackFrame {
                 args,
                 locals,
                 instructions: instr,
+            })
+            .verify()
+        }
+
+        fn verify(self) -> Result<StackFrame, StackFrameError> {
+            let mut operands_num: BTreeMap<Opcode, usize> = BTreeMap::new();
+            operands_num.insert(Opcode::Load, 1);
+            operands_num.insert(Opcode::Store, 1);
+            operands_num.insert(Opcode::Push, 1);
+            operands_num.insert(Opcode::Pop, 0);
+            operands_num.insert(Opcode::Pop2, 0);
+            operands_num.insert(Opcode::Ret, 0);
+
+            let mut stack_size = 0;
+
+            for instr in &self.instructions {
+                let opcode = &instr.1.opcode;
+                let operands = &instr.1.operands;
+                if operands_num.contains_key(opcode) && operands_num.get(opcode).unwrap() != &operands.len() {
+                    return Err(StackFrameError::IncorrectOperandsNumber(operands.len()));
+                }
+
+                match opcode {
+                    Opcode::Load => {
+                        let operand = operands[0] as usize;
+                        if operand >= self.locals.len() {
+                            return Err(StackFrameError::UnreachableLocal(operand));
+                        }
+                        stack_size += 1;
+                    }
+                    Opcode::Store => {
+                        let operand = operands[0] as usize;
+                        if operand >= self.locals.len() {
+                            return Err(StackFrameError::UnreachableLocal(operand));
+                        }
+                        stack_size -= 1;
+                    }
+                    Opcode::Push => stack_size += 1,
+                    Opcode::Pop | Opcode::Ret => {
+                        if stack_size < 1 {
+                            return Err(StackFrameError::EmptyStack);
+                        }
+                        stack_size -= 1;
+                    }
+                    Opcode::Pop2 => {
+                        if stack_size < 2 {
+                            return Err(StackFrameError::EmptyStack);
+                        }
+                        stack_size -= 2;
+                    }
+                    _ => return Err(StackFrameError::UnsupportedInstruction),
+                }
+                println!("Verify {:?}. Stack size: {}", opcode, stack_size)
             }
+            Ok(self)
         }
     }
 
