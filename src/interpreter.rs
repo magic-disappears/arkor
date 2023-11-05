@@ -1,7 +1,7 @@
 pub mod vm {
     use crate::bytecode::bytecode::{Bytecode, Opcode};
     use log::debug;
-    use std::collections::{BTreeMap, VecDeque};
+    use std::collections::{BTreeMap, HashMap, VecDeque};
 
     // TODO: should contain pc, fp, sp, frames stack
     struct VM {}
@@ -10,8 +10,7 @@ pub mod vm {
     pub(crate) struct StackFrame {
         args: Vec<i32>,
         locals: Vec<i32>,
-        // map addr -> opcode
-        instructions: BTreeMap<i32, Bytecode>,
+        start_addr: i32,
     }
 
     impl Default for StackFrame {
@@ -19,7 +18,7 @@ pub mod vm {
             StackFrame {
                 args: vec![],
                 locals: Vec::with_capacity(2),
-                instructions: BTreeMap::default(),
+                start_addr: 0,
             }
         }
     }
@@ -40,17 +39,18 @@ pub mod vm {
         pub(crate) fn new(
             args: Vec<i32>,
             locals: Vec<i32>,
-            instr: BTreeMap<i32, Bytecode>,
-        ) -> Result<StackFrame, StackFrameError> {
-            (StackFrame {
+            start_addr: i32,
+            // ) -> Result<StackFrame, StackFrameError> {
+        ) -> StackFrame {
+            StackFrame {
                 args,
                 locals,
-                instructions: instr,
-            })
-            .verify()
+                start_addr,
+            }
+            // .verify()
         }
 
-        fn verify(self) -> Result<StackFrame, StackFrameError> {
+        fn verify(self, instructions: &[Bytecode]) -> Result<StackFrame, StackFrameError> {
             let mut operands_num: BTreeMap<Opcode, usize> = BTreeMap::new();
             operands_num.insert(Opcode::Load, 1);
             operands_num.insert(Opcode::Store, 1);
@@ -61,9 +61,9 @@ pub mod vm {
 
             let mut stack_size = 0;
 
-            for instr in &self.instructions {
-                let opcode = &instr.1.opcode;
-                let operands = &instr.1.operands;
+            for instr in instructions {
+                let opcode = &instr.opcode;
+                let operands = &instr.operands;
                 if operands_num.contains_key(opcode) && operands_num.get(opcode).unwrap() != &operands.len() {
                     return Err(StackFrameError::IncorrectOperandsNumber(operands.len()));
                 }
@@ -107,28 +107,32 @@ pub mod vm {
     // Stack-based interpreter
     #[derive(Debug)]
     pub(crate) struct Interpreter {
-        pub(crate) pc: i32,
+        pub(crate) pc: usize,
         // TODO: should be private? package-private for test purposes
         // Note: we're using i32 for simplicity
         stack: VecDeque<i32>,
-        frame: StackFrame,
-        // frame: VecDeque<&StackFrame>,
+        frame: VecDeque<StackFrame>,
+        instructions: Vec<Bytecode>,
+        // start address -> subroutine args
+        func_registers: HashMap<i32, i32>,
     }
 
     impl Interpreter {
-        pub(crate) fn new(frame: StackFrame) -> Interpreter {
+        pub(crate) fn new(initial_frame: StackFrame, instructions: Vec<Bytecode>) -> Interpreter {
             Interpreter {
                 pc: 0,
-                stack: VecDeque::new(),
-                frame,
+                stack: VecDeque::default(),
+                frame: VecDeque::from(vec![initial_frame]),
+                instructions,
+                func_registers: HashMap::default(),
             }
         }
 
         pub(crate) fn run(&mut self) {
             // TODO: implement jumps
-            let mut pc = self.pc;
+            let mut frame: StackFrame = self.frame.pop_back().unwrap();
             loop {
-                let curr = self.frame.instructions.get(&pc).unwrap();
+                let curr = self.instructions.get(self.pc).unwrap();
                 match curr.opcode {
                     // Push operand[0] to stack
                     Opcode::Push => {
@@ -148,20 +152,34 @@ pub mod vm {
                     }
                     // Load value from local defined by operand to stack
                     Opcode::Load => {
-                        self.stack.push_back(self.frame.locals[curr.operands[0] as usize]);
-                        debug!("Load. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
+                        self.stack.push_back(frame.locals[curr.operands[0] as usize]);
+                        debug!("Load. Stack: {:?}, locals: {:?}", self.stack, frame.locals);
                     }
                     // Store value from stack to local defined by operand
                     Opcode::Store => {
                         let value = self.stack.pop_back().unwrap();
-                        self.frame.locals[curr.operands[0] as usize] = value;
-                        debug!("Store. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
+                        frame.locals[curr.operands[0] as usize] = value;
+                        debug!("Store. Stack: {:?}, locals: {:?}", self.stack, frame.locals);
+                    }
+                    Opcode::Call => {
+                        let return_addr = self.pc + 1;
+
+                        // TODO: find function by address
+
+                        debug!("Call. Function address: {:?}", curr.operands[0]);
+                        self.stack.push_back(return_addr as i32);
+                        self.frame.push_back(frame);
+                        self.pc = curr.operands[0] as usize;
+                        return;
                     }
                     // Writes return address to PC, return from function, ejects stack frame.
                     Opcode::Ret => {
-                        let return_addr = self.stack.pop_back().unwrap();
+                        frame = self.frame.pop_back().unwrap();
+
+                        let return_addr = self.stack.pop_back().unwrap() as usize;
                         self.pc = return_addr;
-                        debug!("Ret. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
+
+                        debug!("Ret. Stack: {:?}, locals: {:?}", self.stack, frame.locals);
                         debug!("Frame execution is over, return address is {:?}", return_addr);
                         return;
                     }
@@ -169,7 +187,7 @@ pub mod vm {
                         panic!("Not implemented")
                     }
                 }
-                pc += 1;
+                self.pc += 1;
             }
         }
     }
