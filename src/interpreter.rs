@@ -1,5 +1,6 @@
 pub mod vm {
     use crate::bytecode::bytecode::{Bytecode, Opcode};
+    use log::debug;
     use std::collections::{BTreeMap, VecDeque};
 
     // TODO: should contain pc, fp, sp, frames stack
@@ -97,7 +98,7 @@ pub mod vm {
                     }
                     _ => return Err(StackFrameError::UnsupportedInstruction),
                 }
-                println!("Verify {:?}. Stack size: {}", opcode, stack_size)
+                debug!("Verify {:?}. Stack size: {}", opcode, stack_size)
             }
             Ok(self)
         }
@@ -132,36 +133,36 @@ pub mod vm {
                     // Push operand[0] to stack
                     Opcode::Push => {
                         self.stack.push_back(curr.operands[0]);
-                        println!("Push. Stack: {:?}", self.stack)
+                        debug!("Push. Stack: {:?}", self.stack)
                     }
                     // Pops stack's top element
                     Opcode::Pop => {
                         self.stack.pop_back();
-                        println!("Pop. Stack: {:?}", self.stack)
+                        debug!("Pop. Stack: {:?}", self.stack)
                     }
                     // Pops stack's 2 top elements
                     Opcode::Pop2 => {
                         self.stack.pop_back();
                         self.stack.pop_back();
-                        println!("Pop2. Stack: {:?}", self.stack)
+                        debug!("Pop2. Stack: {:?}", self.stack)
                     }
                     // Load value from local defined by operand to stack
                     Opcode::Load => {
                         self.stack.push_back(self.frame.locals[curr.operands[0] as usize]);
-                        println!("Load. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
+                        debug!("Load. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
                     }
                     // Store value from stack to local defined by operand
                     Opcode::Store => {
                         let value = self.stack.pop_back().unwrap();
                         self.frame.locals[curr.operands[0] as usize] = value;
-                        println!("Store. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
+                        debug!("Store. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
                     }
                     // Writes return address to PC, return from function, ejects stack frame.
                     Opcode::Ret => {
                         let return_addr = self.stack.pop_back().unwrap();
                         self.pc = return_addr;
-                        println!("Ret. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
-                        println!("Frame execution is over, return address is {:?}", return_addr);
+                        debug!("Ret. Stack: {:?}, locals: {:?}", self.stack, self.frame.locals);
+                        debug!("Frame execution is over, return address is {:?}", return_addr);
                         return;
                     }
                     _ => {
