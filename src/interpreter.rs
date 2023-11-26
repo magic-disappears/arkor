@@ -174,12 +174,10 @@ pub mod vm {
                     }
                     // Writes return address to PC, return from function, ejects stack frame.
                     Opcode::Ret => {
-                        frame = self.frame.pop_back().unwrap();
-
                         let return_addr = self.stack.pop_back().unwrap() as usize;
                         self.pc = return_addr;
 
-                        debug!("Ret. Stack: {:?}, locals: {:?}", self.stack, frame.locals);
+                        debug!("Ret. Stack: {:?}", self.stack);
                         debug!("Frame execution is over, return address is {:?}", return_addr);
                         return;
                     }
