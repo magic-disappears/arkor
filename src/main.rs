@@ -1,4 +1,5 @@
 use env_logger::Env;
+use std::collections::HashMap;
 
 use crate::bytecode::bytecode::{Bytecode, Opcode};
 use crate::interpreter::vm;
@@ -19,7 +20,8 @@ fn main() {
         Bytecode::new(Opcode::Push, vec![1]),
         Bytecode::new(Opcode::Store, vec![0]),
         Bytecode::new(Opcode::Load, vec![0]),
-        Bytecode::new(Opcode::Ret, vec![])];
+        Bytecode::new(Opcode::Ret, vec![]),
+    ];
 
     // match vm::StackFrame::new(vec![], vec![0; 4], 0, 4) {
     //     Err(err) => println!("Stack frame is not correct: {}.", err),
@@ -30,6 +32,6 @@ fn main() {
     // }
 
     let frame = vm::StackFrame::new(vec![], vec![0; 4], 0);
-    let mut interpreter: Interpreter = Interpreter::new(frame, instr);
+    let mut interpreter: Interpreter = Interpreter::new(frame, instr, HashMap::default());
     interpreter.run();
 }

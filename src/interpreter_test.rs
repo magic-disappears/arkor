@@ -2,6 +2,7 @@
 mod tests {
     use crate::bytecode::bytecode::{Bytecode, Opcode};
     use crate::interpreter::vm::{Interpreter, StackFrame};
+    use std::collections::HashMap;
 
     fn init_logger() {
         let _ = env_logger::builder()
@@ -21,10 +22,11 @@ mod tests {
 
         let instr = vec![
             Bytecode::new(Opcode::Push, vec![5]),
-            Bytecode::new(Opcode::Ret, vec![])];
+            Bytecode::new(Opcode::Ret, vec![]),
+        ];
 
         let frame: StackFrame = StackFrame::new(vec![], vec![1], 0);
-        let mut interpreter: Interpreter = Interpreter::new(frame, instr);
+        let mut interpreter: Interpreter = Interpreter::new(frame, instr, HashMap::default());
 
         interpreter.run();
 
@@ -44,11 +46,11 @@ mod tests {
             Bytecode::new(Opcode::Push, vec![5]),
             Bytecode::new(Opcode::Pop, vec![]),
             Bytecode::new(Opcode::Pop2, vec![]),
-            Bytecode::new(Opcode::Ret, vec![])];
+            Bytecode::new(Opcode::Ret, vec![]),
+        ];
 
         let frame: StackFrame = StackFrame::new(vec![], vec![1], 0);
-        let mut interpreter: Interpreter = Interpreter::new(frame, instr);
-
+        let mut interpreter: Interpreter = Interpreter::new(frame, instr, HashMap::default());
         interpreter.run();
 
         assert_eq!(interpreter.pc, 10);
@@ -62,11 +64,11 @@ mod tests {
 
         let instr = vec![
             Bytecode::new(Opcode::Load, vec![1]),
-            Bytecode::new(Opcode::Ret, vec![])];
+            Bytecode::new(Opcode::Ret, vec![]),
+        ];
 
         let frame: StackFrame = StackFrame::new(vec![], vec![5; 2], 0);
-        let mut interpreter: Interpreter = Interpreter::new(frame, instr);
-
+        let mut interpreter: Interpreter = Interpreter::new(frame, instr, HashMap::default());
         interpreter.run();
 
         assert_eq!(interpreter.pc, 5);
@@ -82,13 +84,42 @@ mod tests {
             Bytecode::new(Opcode::Push, vec![5; 1]),
             Bytecode::new(Opcode::Store, vec![1]),
             Bytecode::new(Opcode::Load, vec![1]),
-            Bytecode::new(Opcode::Ret, vec![])];
+            Bytecode::new(Opcode::Ret, vec![]),
+        ];
 
         let frame: StackFrame = StackFrame::new(vec![], vec![0; 2], 0);
-        let mut interpreter: Interpreter = Interpreter::new(frame, instr);
+        let mut interpreter: Interpreter = Interpreter::new(frame, instr, HashMap::default());
 
         interpreter.run();
 
         assert_eq!(interpreter.pc, 5);
+    }
+
+    #[test]
+    fn test_call() {
+        init_logger();
+
+        // TODO: move tests, like : add two digits in callee,
+        //  return value and compare it in caller.
+        let instr = vec![
+            // main function
+            Bytecode::new(Opcode::Push, vec![5; 1]),
+            Bytecode::new(Opcode::Call, vec![0]),
+            Bytecode::new(Opcode::Ret, vec![]),
+            // other function to call
+            Bytecode::new(Opcode::Load, vec![1]),
+            Bytecode::new(Opcode::Ret, vec![]),
+        ];
+
+        let frame: StackFrame = StackFrame::new(vec![], vec![10; 2], 0);
+        let mut hash_map: HashMap<i32, i32> = HashMap::new();
+        hash_map.insert(0, 3);
+
+        let mut interpreter: Interpreter = Interpreter::new(frame, instr, hash_map);
+
+        interpreter.run();
+
+        // Last call site was 2: Ret
+        assert_eq!(interpreter.pc, 3);
     }
 }

@@ -104,12 +104,20 @@ pub mod vm {
         }
     }
 
-    // Stack-based interpreter
+    /// Stack-based interpreter object. It holds:
+    /// - program counter (pc);
+    /// - execution stack, only i32 values are supported for simplicity;
+    /// - instructions vector. Each instruction is represented by Bytecode object,
+    ///   which contains opcode and operands. The whole program is represented by
+    ///   single vector of instructions. The subroutines is differentiated by
+    ///   [Interpreter@func_registers] hashmap, which contains start address of each subroutine.
+    ///   We don't need to know the end address of each subroutine, because it always
+    ///   must end with Ret instruction.
+    /// - frame stack. Each frame contains locals and args.
     #[derive(Debug)]
     pub(crate) struct Interpreter {
         pub(crate) pc: usize,
         // TODO: should be private? package-private for test purposes
-        // Note: we're using i32 for simplicity
         stack: VecDeque<i32>,
         frame: VecDeque<StackFrame>,
         instructions: Vec<Bytecode>,
@@ -118,16 +126,21 @@ pub mod vm {
     }
 
     impl Interpreter {
-        pub(crate) fn new(initial_frame: StackFrame, instructions: Vec<Bytecode>) -> Interpreter {
+        pub(crate) fn new(
+            initial_frame: StackFrame,
+            instructions: Vec<Bytecode>,
+            func_registers: HashMap<i32, i32>,
+        ) -> Interpreter {
             Interpreter {
                 pc: 0,
                 stack: VecDeque::default(),
                 frame: VecDeque::from(vec![initial_frame]),
                 instructions,
-                func_registers: HashMap::default(),
+                func_registers,
             }
         }
 
+        /// Main function, runs the interpreter.
         pub(crate) fn run(&mut self) {
             // TODO: implement jumps
             let mut frame: StackFrame = self.frame.pop_back().unwrap();
@@ -161,19 +174,30 @@ pub mod vm {
                         frame.locals[curr.operands[0] as usize] = value;
                         debug!("Store. Stack: {:?}, locals: {:?}", self.stack, frame.locals);
                     }
+                    // Writes return address to PC, store it on stack, find function
                     Opcode::Call => {
                         let return_addr = self.pc + 1;
 
-                        // TODO: find function by address
+                        // TODO: catch None.
+                        match self.func_registers.get(&curr.operands[0]) {
+                            Some(function_addr_ref) => {
+                                let fn_addr = *function_addr_ref;
+                                debug!("Call. Function address: {:?}", fn_addr);
 
-                        debug!("Call. Function address: {:?}", curr.operands[0]);
-                        self.stack.push_back(return_addr as i32);
-                        self.frame.push_back(frame);
-                        self.pc = curr.operands[0] as usize;
+                                self.stack.push_back(return_addr as i32);
+                                self.frame.push_back(StackFrame::new(vec![], vec![0; 4], fn_addr));
+                                self.pc = fn_addr as usize;
+                            }
+                            None => {
+                                panic!("Function address is not found")
+                            }
+                        }
                         return;
                     }
                     // Writes return address to PC, return from function, ejects stack frame.
                     Opcode::Ret => {
+                        self.frame.pop_back();
+
                         let return_addr = self.stack.pop_back().unwrap() as usize;
                         self.pc = return_addr;
 
